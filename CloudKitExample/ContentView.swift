@@ -21,7 +21,7 @@ struct ContentView: View {
       Text("Name: \(viewModel.userName)")
     }
     .padding()
-    .background(Color.white)
+    .background(Color.gray)
     .clipShape(RoundedRectangle(cornerRadius: 25.0))
     .shadow(color: .blue, radius: 10)
   }
