@@ -7,6 +7,7 @@
 
 import SwiftUI
 import CloudKit
+import Combine
 
 class CloudKitViewModel: ObservableObject {
   
@@ -23,73 +24,64 @@ class CloudKitViewModel: ObservableObject {
   @Published var error = ""
   @Published var userName = ""
   
+  var cancelBag = Set<AnyCancellable>()
+  
   init() {
     getiCloudStatus()
     requestPermission()
-    getUserRecordID()
+    getUserName()
     
     getItems()
   }
   
   func getiCloudStatus() {
-    CKContainer.default().accountStatus { [weak self] status, error in
-      guard let self else { return }
-      DispatchQueue.main.async {
-        switch status {
-        case .available:
-          self.isSignedIn.toggle()
-        case .couldNotDetermine:
-          self.error = CloudKitError.notDetermine.rawValue
-        case .restricted:
-          self.error = CloudKitError.restricted.rawValue
-        default:
-          self.error = CloudKitError.restricted.rawValue
+    CloudKitUtility
+      .getiCloudStatus()
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] result in
+        switch result {
+        case .finished: break
+        case .failure(let error):
+          self?.error = error.localizedDescription
         }
+      } receiveValue: { [weak self] isEnabled in
+        self?.isSignedIn = isEnabled
       }
-    }
-  }
-  
-  func getUserRecordID() {
-    CKContainer
-      .default()
-      .fetchUserRecordID { [weak self] id, error in
-        guard let self, let id else { return }
-        getiCloudUser(id)
-      }
-  }
-  
-  func getiCloudUser(_ id: CKRecord.ID) {
-    CKContainer
-      .default()
-      .discoverUserIdentity(withUserRecordID: id) { [weak self] user, error in
-        guard let self else { return }
-        DispatchQueue.main.async {
-          if let name = user?.nameComponents?.givenName {
-            self.userName = name
-          }
-        }
-      }
+      .store(in: &cancelBag)
   }
   
   func requestPermission() {
-    CKContainer
-      .default()
-      .requestApplicationPermission([.userDiscoverability]) { [weak self] status, error in
-        guard let self else { return }
-        DispatchQueue.main.async {
-          if status == .granted {
-            self.userStatus = true
-          }
+    CloudKitUtility
+      .requestPermission()
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] result in
+        switch result {
+        case .finished: break
+        case .failure(let error):
+          self?.error = error.localizedDescription
         }
+      } receiveValue: { [weak self] isEnabled in
+        self?.userStatus = isEnabled
       }
+      .store(in: &cancelBag)
   }
-}
-
-extension CloudKitViewModel {
   
-  enum CloudKitError: String, LocalizedError {
-    case notFound, notDetermine, restricted, unknown
+  func getUserName() {
+    CloudKitUtility
+      .discoverUserIdentity()
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] result in
+        switch result {
+        case .finished: break
+        case .failure(let error):
+          self?.error = error.localizedDescription
+        }
+      } receiveValue: { [weak self] name in
+        self?.userName = name
+      }
+      .store(in: &cancelBag)
   }
+  
 }
 
 // MARK: - CRUD

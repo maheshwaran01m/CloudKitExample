@@ -12,6 +12,7 @@
 		9DB6AC3D2B0889D200094823 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9DB6AC3C2B0889D200094823 /* Assets.xcassets */; };
 		9DB6AC402B0889D200094823 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9DB6AC3F2B0889D200094823 /* Preview Assets.xcassets */; };
 		9DB6AC482B088BDA00094823 /* CloudKitViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DB6AC472B088BDA00094823 /* CloudKitViewModel.swift */; };
+		9DB6AC4D2B09D89A00094823 /* CloudKitUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DB6AC4C2B09D89A00094823 /* CloudKitUtility.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +23,7 @@
 		9DB6AC3F2B0889D200094823 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		9DB6AC462B0889E400094823 /* CloudKitExample.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CloudKitExample.entitlements; sourceTree = "<group>"; };
 		9DB6AC472B088BDA00094823 /* CloudKitViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitViewModel.swift; sourceTree = "<group>"; };
+		9DB6AC4C2B09D89A00094823 /* CloudKitUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitUtility.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +60,7 @@
 				9DB6AC382B0889D100094823 /* CloudKitExampleApp.swift */,
 				9DB6AC3A2B0889D100094823 /* ContentView.swift */,
 				9DB6AC472B088BDA00094823 /* CloudKitViewModel.swift */,
+				9DB6AC4B2B09D7C200094823 /* CloudKitUtils */,
 				9DB6AC3C2B0889D200094823 /* Assets.xcassets */,
 				9DB6AC3E2B0889D200094823 /* Preview Content */,
 			);
@@ -70,6 +73,14 @@
 				9DB6AC3F2B0889D200094823 /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		9DB6AC4B2B09D7C200094823 /* CloudKitUtils */ = {
+			isa = PBXGroup;
+			children = (
+				9DB6AC4C2B09D89A00094823 /* CloudKitUtility.swift */,
+			);
+			path = CloudKitUtils;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -145,6 +156,7 @@
 				9DB6AC3B2B0889D100094823 /* ContentView.swift in Sources */,
 				9DB6AC392B0889D100094823 /* CloudKitExampleApp.swift in Sources */,
 				9DB6AC482B088BDA00094823 /* CloudKitViewModel.swift in Sources */,
+				9DB6AC4D2B09D89A00094823 /* CloudKitUtility.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
