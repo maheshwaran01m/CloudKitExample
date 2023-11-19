@@ -78,10 +78,21 @@ struct ContentView: View {
   private var listView: some View {
     List {
       ForEach(viewModel.records, id: \.self) { record in
-        Text(record.name)
-          .onTapGesture {
-            viewModel.updateItem(record)
+        HStack {
+          Text(record.name)
+          
+          if let url = record.imageURL,
+             let data = try? Data(contentsOf: url),
+             let uiImage = UIImage(data: data) {
+            Image(uiImage: uiImage)
+              .resizable()
+              .frame(width: 50, height: 50)
+              .clipShape(RoundedRectangle(cornerRadius: 25.0))
           }
+        }
+        .onTapGesture {
+          viewModel.updateItem(record)
+        }
       }
       .onDelete(perform: viewModel.deleteItem)
     }

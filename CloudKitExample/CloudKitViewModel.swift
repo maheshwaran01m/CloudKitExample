@@ -151,7 +151,10 @@ extension CloudKitViewModel {
         guard let name = record["name"] as? String else {
           return
         }
-        records.append(.init(name: name, record: record))
+        let imageAsset = record["image"] as? CKAsset
+        let url = imageAsset?.fileURL
+        
+        records.append(.init(name: name, record: record, imageURL: url))
       case .failure(let error):
         print("Reason: \(error)")
       }
@@ -217,5 +220,6 @@ extension CloudKitViewModel {
   struct Item: Hashable {
     let name: String
     let record: CKRecord
+    let imageURL: URL?
   }
 }
