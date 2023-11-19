@@ -48,6 +48,7 @@ struct ContentView: View {
       .padding(.leading)
       .background(Color.gray.opacity(0.2), in: RoundedRectangle(cornerRadius: 8))
       .background(RoundedRectangle(cornerRadius: 8).stroke(lineWidth: 1))
+      .overlay(alignment: .trailing, content: addImageView)
   }
 
   private var addButton: some View {
@@ -60,6 +61,17 @@ struct ContentView: View {
         .frame(maxWidth: .infinity)
         .background(Color.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
         .background(RoundedRectangle(cornerRadius: 8).stroke(lineWidth: 1))
+    }
+  }
+  
+  private func addImageView() -> some View {
+    Button {
+      viewModel.addButtonClicked(true)
+    } label: {
+      Image(systemName: "plus")
+        .padding()
+        .background(.red.opacity(0.5))
+        .clipShape(Circle())
     }
   }
   

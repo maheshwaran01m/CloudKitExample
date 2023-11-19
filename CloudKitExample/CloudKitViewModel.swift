@@ -93,14 +93,28 @@ extension CloudKitViewModel {
 
 extension CloudKitViewModel {
   
-  func addButtonClicked() {
+  func addButtonClicked(_ isImageEnabled: Bool = false) {
     guard !textValue.isEmpty else { return }
-    addItem(textValue)
+    addItem(textValue, isImageEnabled: isImageEnabled)
   }
   
-  func addItem(_ name: String) {
+  func addItem(_ name: String, isImageEnabled: Bool = false) {
     let newRecord = CKRecord(recordType: "Records")
     newRecord["name"] = name
+    
+    // Save Image
+    if isImageEnabled,
+        let image = UIImage(systemName: "star"),
+       let data = image.jpegData(compressionQuality: 0.2) {
+      let url = URL.documentsDirectory.appending(path: "\(name).jpg")
+      
+      do {
+        try data.write(to: url)
+        newRecord["image"] = CKAsset(fileURL: url)
+      } catch {
+        debugPrint(error.localizedDescription)
+      }
+    }
     
     saveItem(newRecord)
   }
