@@ -10,6 +10,10 @@ import SwiftUI
 struct ContentView: View {
   
   var body: some View {
+    icloudCRUDview
+  }
+  
+  var tabBarView: some View {
     TabView {
       icloudCRUDview
       icloudStatusView
@@ -21,20 +25,15 @@ struct ContentView: View {
   
   var icloudCRUDview: some View {
     NavigationStack {
-      VStack {
-        headerCrudView
-        listView
-      }
-      .safeAreaInset(edge: .bottom, content: inputViews)
-      .padding(.horizontal)
-      .toolbar(content: pushNotificationView)
-      .onAppear(perform: viewModel.requestNotificationPermission)
+      listView
+        .safeAreaInset(edge: .bottom, content: inputViews)
+        .padding()
+        .toolbar(content: pushNotificationView)
+        .onAppear(perform: viewModel.requestNotificationPermission)
+        .navigationTitle("CloudKit")
+        .toolbarBackground(.visible, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.large)
     }
-  }
-  
-  private var headerCrudView: some View {
-    Text("CloudKit")
-      .font(.headline)
   }
   
   private func inputViews() -> some View {
@@ -43,7 +42,7 @@ struct ContentView: View {
       addButton
     }
   }
-
+  
   private var textFieldView: some View {
     TextField("Enter text", text: $viewModel.textValue)
       .frame(height: 55)
@@ -52,7 +51,7 @@ struct ContentView: View {
       .background(RoundedRectangle(cornerRadius: 8).stroke(lineWidth: 1))
       .overlay(alignment: .trailing, content: addImageView)
   }
-
+  
   private var addButton: some View {
     Button {
       viewModel.addButtonClicked()
@@ -72,7 +71,7 @@ struct ContentView: View {
     } label: {
       Image(systemName: "paperclip")
         .padding(10)
-        
+      
         .background(.gray.opacity(0.3))
         .clipShape(Circle())
         .background(Circle().stroke(lineWidth: 1))
@@ -102,9 +101,7 @@ struct ContentView: View {
       }
       .onDelete(perform: viewModel.deleteItem)
     }
-    .listStyle(.insetGrouped)
-    .frame(alignment: .leading)
-    .clipShape(RoundedRectangle(cornerRadius: 25.0))
+    .listStyle(.plain)
   }
   
   private func pushNotificationView() -> some ToolbarContent {
@@ -120,7 +117,7 @@ struct ContentView: View {
   // MARK: - Status
   
   @StateObject private var viewModel = CloudKitViewModel()
-
+  
   var icloudStatusView: some View {
     VStack(alignment: .leading, spacing: 10) {
       Text("isSignedIn: \(viewModel.isSignedIn.description.capitalized)")
