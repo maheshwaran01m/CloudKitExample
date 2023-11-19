@@ -68,11 +68,15 @@ struct ContentView: View {
     Button {
       viewModel.addButtonClicked(true)
     } label: {
-      Image(systemName: "plus")
-        .padding()
-        .background(.red.opacity(0.5))
+      Image(systemName: "paperclip")
+        .padding(10)
+        
+        .background(.gray.opacity(0.3))
         .clipShape(Circle())
+        .background(Circle().stroke(lineWidth: 1))
+        .tint(.red)
     }
+    .padding(.trailing, 5)
   }
   
   private var listView: some View {
