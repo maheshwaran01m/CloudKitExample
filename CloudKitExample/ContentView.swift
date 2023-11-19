@@ -102,6 +102,16 @@ struct ContentView: View {
       .onDelete(perform: viewModel.deleteItem)
     }
     .listStyle(.plain)
+    .overlay(content: placholderView)
+  }
+  
+  @ViewBuilder
+  private func placholderView() -> some View {
+    if viewModel.records.isEmpty {
+      Text("No Records")
+        .font(.title2)
+        .foregroundStyle(Color.gray)
+    }
   }
   
   private func pushNotificationView() -> some ToolbarContent {
