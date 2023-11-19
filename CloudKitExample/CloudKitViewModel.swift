@@ -88,6 +88,8 @@ class CloudKitViewModel: ObservableObject {
 
 extension CloudKitViewModel {
   
+  // MARK: - Save
+  
   func addButtonClicked(_ isImageEnabled: Bool = false) {
     guard !textValue.isEmpty else { return }
     addItem(textValue, isImageEnabled: isImageEnabled)
@@ -97,6 +99,8 @@ extension CloudKitViewModel {
     let newRecord = CKRecord(recordType: "Records")
     newRecord["name"] = name
     
+    var item = Item(newRecord)
+    
     // Save Image
     if isImageEnabled,
        let image = UIImage(systemName: "star"),
@@ -105,117 +109,143 @@ extension CloudKitViewModel {
       
       do {
         try data.write(to: url)
-        newRecord["image"] = CKAsset(fileURL: url)
+        item = Item(name: name, record: newRecord, imageURL: url)
+        
       } catch {
         debugPrint(error.localizedDescription)
       }
     }
     
-    saveItem(newRecord)
-  }
-  
-  // MARK: - Save
-  
-  private func saveItem(_ record: CKRecord) {
-    CKContainer
-      .default()
-      .publicCloudDatabase
-      .save(record) { [weak self] record, error in
-        guard let self else { return }
-        DispatchQueue.main.async {
-          self.textValue = ""
+    guard let item else { return }
+    
+    CloudKitUtility
+      .save(item)
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] result in
+        switch result {
+        case .finished: break
+        case .failure(let error):
+          self?.textValue = ""
+          self?.error = error.localizedDescription
         }
+      } receiveValue: { [weak self] isEnabled in
+        guard let self else { return }
+        self.textValue = ""
+        // Better fetch single Item, after save
+        self.getItems()
       }
+      .store(in: &cancelBag)
   }
+  
   
   // MARK: - Get
   
   func getItems() {
-    let predicate = NSPredicate(value: true)
-    let query = CKQuery(recordType: "Records", predicate: predicate)
-    query.sortDescriptors = [.init(key: "name", ascending: true)]
-    
-    let queryOperation = CKQueryOperation(query: query)
-    //    queryOperation.resultsLimit = 25 // maxLimit: 100
-    
-    var records = [Item]()
-    
-    queryOperation.recordMatchedBlock = { id, result in
-      switch result {
-      case .success(let record):
-        guard let name = record["name"] as? String else {
-          return
+    CloudKitUtility
+      .fetch(
+        for: "Records",
+        predicate: NSPredicate(value: true),
+        sortDescriptor: [.init(key: "name", ascending: true)])
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] result in
+        switch result {
+        case .finished: break
+        case .failure(let error):
+          self?.error = error.localizedDescription
         }
-        let imageAsset = record["image"] as? CKAsset
-        let url = imageAsset?.fileURL
-        
-        records.append(.init(name: name, record: record, imageURL: url))
-      case .failure(let error):
-        print("Reason: \(error)")
+      } receiveValue: { [weak self] records in
+        self?.records = records
       }
-    }
-    
-    queryOperation.queryResultBlock = { [weak self] result in
-      guard let self else { return }
-      switch result {
-      case .success(let value):
-        debugPrint("Query Result: \(value.debugDescription)")
-        
-        DispatchQueue.main.async {
-          self.records = records
-          self.getItems()
-        }
-        
-      case .failure(let error):
-        print("Reason: \(error)")
-      }
-    }
-    
-    addOperations(queryOperation)
-  }
-  
-  func addOperations(_ operation: CKDatabaseOperation) {
-    CKContainer
-      .default()
-      .publicCloudDatabase
-      .add(operation)
+      .store(in: &cancelBag)
   }
   
   // MARK: - Update
   
   func updateItem(_ item: Item) {
-    let record = item.record
-    record["name"] = "New Value"
+    guard let item = item.update("New Value") else {
+      return
+    }
     
-    saveItem(record)
-    // Better fetch single Item, after updated
+    CloudKitUtility
+      .update(item)
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] result in
+        switch result {
+        case .finished: break
+        case .failure(let error):
+          self?.error = error.localizedDescription
+        }
+      } receiveValue: { [weak self] success in
+        guard success, let self else { return }
+        // Better fetch single Item, after updated
+        self.getItems()
+      }
+      .store(in: &cancelBag)
   }
   
   // MARK: - Delete
   
   func deleteItem(_ indexSet: IndexSet) {
     guard let index = indexSet.first else { return }
-    let item = records[index]
-    let record = item.record
     
-    CKContainer
-      .default()
-      .publicCloudDatabase
-      .delete(withRecordID: record.recordID) { [weak self] id, error in
-        guard let self else { return }
+    CloudKitUtility
+      .delete(records[index])
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] result in
+        switch result {
+        case .finished: break
+        case .failure(let error):
+          self?.error = error.localizedDescription
+        }
+      } receiveValue: { [weak self] success in
+        guard success, let self else { return }
+        // Better fetch single Item, after deleted
+        self.getItems()
         DispatchQueue.main.async {
           self.records.remove(at: index)
         }
       }
+      .store(in: &cancelBag)
   }
 }
 
 extension CloudKitViewModel {
   
-  struct Item: Hashable {
+  struct Item: Hashable, CloudKitItemProtocol {
     let name: String
     let record: CKRecord
     let imageURL: URL?
+    
+    init?(_ record: CKRecord) {
+      guard let name = record["name"] as? String else {
+        return nil
+      }
+      let imageAsset = record["image"] as? CKAsset
+      let url = imageAsset?.fileURL
+      
+      self.name = name
+      self.imageURL = url
+      self.record = record
+    }
+    
+    init?(name: String, record: CKRecord, imageURL: URL? = nil) {
+      let newRecord = CKRecord(recordType: "Records")
+      newRecord["name"] = name
+      
+      // Save Image
+      if let imageURL {
+        newRecord["image"] = CKAsset(fileURL: imageURL)
+      }
+      
+      self.init(record)
+    }
+    
+    func update(_ name: String) -> Self? {
+      let record = record
+      record["name"] = name
+      
+      return .init(record)
+    }
   }
 }
 
@@ -224,19 +254,7 @@ extension CloudKitViewModel {
 extension CloudKitViewModel {
   
   func requestNotificationPermission() {
-    guard !UIApplication.shared.isRegisteredForRemoteNotifications else { return }
-    
-    UNUserNotificationCenter
-      .current()
-      .requestAuthorization(options: [.alert, .sound, .badge]) { isEnabled, error in
-        guard error == nil else {
-          print("Error \(String(describing: error?.localizedDescription))")
-          return
-        }
-        DispatchQueue.main.async {
-          UIApplication.shared.registerForRemoteNotifications()
-        }
-      }
+    CloudKitUtility.requestNotificationPermission()
   }
   
   func handlePushNotifications() {
@@ -263,34 +281,36 @@ extension CloudKitViewModel {
     
     subscription.notificationInfo = notification
     
-    CKContainer
-      .default()
-      .publicCloudDatabase
-      .save(subscription) { [weak self] success, error in
-        guard let self, error == nil else {
-          print("Error: \(String(describing: error?.localizedDescription))")
-          return
+    CloudKitUtility
+      .subscribeNotifications(subscription)
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] result in
+        switch result {
+        case .finished: break
+        case .failure(let error):
+          self?.error = error.localizedDescription
         }
-        DispatchQueue.main.async {
-          self.isEnabled = true
-        }
-        print("Successfully Subscribed: \(success.debugDescription)")
+      } receiveValue: { [weak self] success in
+        guard success, let self else { return }
+        self.isEnabled = true
       }
+      .store(in: &cancelBag)
   }
   
   func unSubscribeNotification() {
-    CKContainer
-      .default()
-      .publicCloudDatabase
-      .delete(withSubscriptionID: "Records_created_to_cloudKit") { [weak self] id, error in
-        guard let self, error == nil else {
-          print("Error: \(String(describing: error?.localizedDescription))")
-          return
+    CloudKitUtility
+      .unSubscribeNotifications("Records_created_to_cloudKit")
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] result in
+        switch result {
+        case .finished: break
+        case .failure(let error):
+          self?.error = error.localizedDescription
         }
-        print("UnSubscribed: \(id.debugDescription)")
-        DispatchQueue.main.async {
-          self.isEnabled = false
-        }
+      } receiveValue: { [weak self] success in
+        guard success, let self else { return }
+        self.isEnabled = false
       }
+      .store(in: &cancelBag)
   }
 }
