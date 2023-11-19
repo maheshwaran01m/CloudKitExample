@@ -9,9 +9,10 @@ import SwiftUI
 
 @main
 struct CloudKitExampleApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
+  var body: some Scene {
+    WindowGroup {
+      let _ = print("Path: \(URL.documentsDirectory.path())")
+      ContentView()
     }
+  }
 }
