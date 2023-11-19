@@ -23,7 +23,7 @@ struct ContentView: View {
     .padding()
     .background(Color.gray)
     .clipShape(RoundedRectangle(cornerRadius: 25.0))
-    .shadow(color: .blue, radius: 10)
+    .shadow(color: .yellow, radius: 10)
   }
 }
 
