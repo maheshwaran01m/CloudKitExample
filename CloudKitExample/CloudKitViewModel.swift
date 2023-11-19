@@ -232,16 +232,16 @@ extension CloudKitViewModel {
 extension CloudKitViewModel {
   
   func requestNotificationPermission() {
-    guard !isEnabled else { return }
+    guard !UIApplication.shared.isRegisteredForRemoteNotifications else { return }
+    
     UNUserNotificationCenter
       .current()
-      .requestAuthorization(options: [.alert, .sound, .badge]) { [weak self] isEnabled, error in
-        guard let self, error == nil else {
+      .requestAuthorization(options: [.alert, .sound, .badge]) { isEnabled, error in
+        guard error == nil else {
           print("Error \(String(describing: error?.localizedDescription))")
           return
         }
         DispatchQueue.main.async {
-          self.isEnabled = true
           UIApplication.shared.registerForRemoteNotifications()
         }
       }
@@ -274,10 +274,13 @@ extension CloudKitViewModel {
     CKContainer
       .default()
       .publicCloudDatabase
-      .save(subscription) { success, error in
-        guard error == nil else {
+      .save(subscription) { [weak self] success, error in
+        guard let self, error == nil else {
           print("Error: \(String(describing: error?.localizedDescription))")
           return
+        }
+        DispatchQueue.main.async {
+          self.isEnabled = true
         }
         print("Successfully Subscribed: \(success.debugDescription)")
       }
@@ -287,12 +290,15 @@ extension CloudKitViewModel {
     CKContainer
       .default()
       .publicCloudDatabase
-      .delete(withSubscriptionID: "Records_created_to_cloudKit") { id, error in
-        guard error == nil else {
+      .delete(withSubscriptionID: "Records_created_to_cloudKit") { [weak self] id, error in
+        guard let self, error == nil else {
           print("Error: \(String(describing: error?.localizedDescription))")
           return
         }
         print("UnSubscribed: \(id.debugDescription)")
+        DispatchQueue.main.async {
+          self.isEnabled = false
+        }
       }
   }
 }
