@@ -13,6 +13,9 @@ class CloudKitViewModel: ObservableObject {
   @Published var textValue = ""
   @Published var records = [Item]()
   
+  // Notification
+  @Published var isEnabled = false
+  
   // MARK: - Status
   
   @Published var userStatus = false
@@ -65,7 +68,7 @@ class CloudKitViewModel: ObservableObject {
             self.userName = name
           }
         }
-    }
+      }
   }
   
   func requestPermission() {
@@ -104,7 +107,7 @@ extension CloudKitViewModel {
     
     // Save Image
     if isImageEnabled,
-        let image = UIImage(systemName: "star"),
+       let image = UIImage(systemName: "star"),
        let data = image.jpegData(compressionQuality: 0.2) {
       let url = URL.documentsDirectory.appending(path: "\(name).jpg")
       
@@ -141,7 +144,7 @@ extension CloudKitViewModel {
     query.sortDescriptors = [.init(key: "name", ascending: true)]
     
     let queryOperation = CKQueryOperation(query: query)
-//    queryOperation.resultsLimit = 25 // maxLimit: 100
+    //    queryOperation.resultsLimit = 25 // maxLimit: 100
     
     var records = [Item]()
     
@@ -221,5 +224,75 @@ extension CloudKitViewModel {
     let name: String
     let record: CKRecord
     let imageURL: URL?
+  }
+}
+
+// MARK: - Push Notifications
+
+extension CloudKitViewModel {
+  
+  func requestNotificationPermission() {
+    guard !isEnabled else { return }
+    UNUserNotificationCenter
+      .current()
+      .requestAuthorization(options: [.alert, .sound, .badge]) { [weak self] isEnabled, error in
+        guard let self, error == nil else {
+          print("Error \(String(describing: error?.localizedDescription))")
+          return
+        }
+        DispatchQueue.main.async {
+          self.isEnabled = true
+          UIApplication.shared.registerForRemoteNotifications()
+        }
+      }
+  }
+  
+  func handlePushNotifications() {
+    requestNotificationPermission()
+    
+    if isEnabled {
+      unSubscribeNotification()
+    } else {
+      subscribeToNotification()
+    }
+  }
+  
+  func subscribeToNotification() {
+    let subscription = CKQuerySubscription(
+      recordType: "Records",
+      predicate: .init(value: true),
+      subscriptionID: "Records_created_to_cloudKit",
+      options: .firesOnRecordCreation)
+    
+    let notification = CKSubscription.NotificationInfo()
+    notification.title = "Record created successfully in CloudKit"
+    notification.alertBody = "Open to the app to check your records"
+    notification.soundName = "default"
+    
+    subscription.notificationInfo = notification
+    
+    CKContainer
+      .default()
+      .publicCloudDatabase
+      .save(subscription) { success, error in
+        guard error == nil else {
+          print("Error: \(String(describing: error?.localizedDescription))")
+          return
+        }
+        print("Successfully Subscribed: \(success.debugDescription)")
+      }
+  }
+  
+  func unSubscribeNotification() {
+    CKContainer
+      .default()
+      .publicCloudDatabase
+      .delete(withSubscriptionID: "Records_created_to_cloudKit") { id, error in
+        guard error == nil else {
+          print("Error: \(String(describing: error?.localizedDescription))")
+          return
+        }
+        print("UnSubscribed: \(id.debugDescription)")
+      }
   }
 }

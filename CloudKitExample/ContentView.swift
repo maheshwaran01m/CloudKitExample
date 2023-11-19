@@ -27,6 +27,8 @@ struct ContentView: View {
       }
       .safeAreaInset(edge: .bottom, content: inputViews)
       .padding(.horizontal)
+      .toolbar(content: pushNotificationView)
+      .onAppear(perform: viewModel.requestNotificationPermission)
     }
   }
   
@@ -104,8 +106,16 @@ struct ContentView: View {
     .frame(alignment: .leading)
     .clipShape(RoundedRectangle(cornerRadius: 25.0))
   }
-
-
+  
+  private func pushNotificationView() -> some ToolbarContent {
+    ToolbarItem(placement: .topBarTrailing) {
+      Button(viewModel.isEnabled ? "UnSubscribe": "Subscribe") {
+        viewModel.handlePushNotifications()
+      }
+      .buttonStyle(.bordered)
+      .padding(.trailing)
+    }
+  }
   
   // MARK: - Status
   
