@@ -20,7 +20,8 @@ class CloudKitUtility {
   
   enum CloudKitError: String, LocalizedError {
     case notFound, notDetermine, restricted, unknown, permissionNotGranted,
-         recordIDNotFound, userNameNotFound, recordNotFound, saveError, deleteError, errorInSubscribe, errorInUnSubscribe
+         recordIDNotFound, userNameNotFound, recordNotFound, saveError, 
+         deleteError, errorInSubscribe, errorInUnSubscribe
   }
 }
 
